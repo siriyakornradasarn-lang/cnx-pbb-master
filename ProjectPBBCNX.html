@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CNX PBB MASTER v32 | FINAL GEOMETRY</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Anuphan:wght@300;400;600;700&family=JetBrains+Mono:wght@500;700&display=swap');
+        body { font-family: 'Anuphan', sans-serif; background-color: #020617; color: #e2e8f0; overflow-x: hidden; }
+        .mono { font-family: 'JetBrains+Mono', monospace; }
+        
+        /* UI Components */
+        .gate-card { transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); }
+        .gate-card:hover { transform: translateY(-5px); border-color: #3b82f6; box-shadow: 0 10px 30px -10px rgba(59, 130, 246, 0.4); }
+        .gate-card.active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.15); box-shadow: 0 0 25px rgba(59, 130, 246, 0.3); transform: scale(1.02); }
+        
+        .ac-btn { transition: all 0.2s; border: 1px solid #1e293b; }
+        .ac-btn:hover { background: #0f172a; border-color: #3b82f6; }
+        .ac-btn.active { border-color: #3b82f6; background: rgba(59, 130, 246, 0.1); box-shadow: inset 0 0 15px rgba(59, 130, 246, 0.1); }
+        .ac-disabled { opacity: 0.3; pointer-events: none; filter: grayscale(1); }
+        
+        .step-section { max-height: 0; opacity: 0; overflow: hidden; transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); margin-bottom: 0; }
+        .step-section.active { max-height: 5000px; opacity: 1; margin-bottom: 4rem; }
+        
+        .glass-panel { background: rgba(15, 23, 42, 0.9); backdrop-filter: blur(20px); border: 1px solid rgba(51, 65, 85, 0.5); box-shadow: 0 10px 40px -10px rgba(0,0,0,0.5); }
+        
+        /* 3D Container */
+        #three-container { 
+            width: 100%; height: 550px; 
+            background: radial-gradient(circle at center, #1a1a1a 0%, #000 100%);
+            border-radius: 1.5rem; position: relative; overflow: hidden; 
+            border: 1px solid #333; box-shadow: inset 0 0 80px #000;
+        }
+        
+        .spec-item { background: rgba(30, 41, 59, 0.4); padding: 1rem; border-radius: 0.75rem; border: 1px solid rgba(255,255,255,0.05); }
+        .spec-label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; letter-spacing: 0.05em; font-weight: 700; }
+        .spec-value { font-family: 'JetBrains+Mono'; font-size: 1.1rem; font-weight: 700; color: #fff; }
+
+        /* Knowledge Cards - Exact Theme */
+        .knowledge-card { padding: 1.5rem; border-radius: 0.75rem; position: relative; overflow: hidden; margin-bottom: 1rem; transition: transform 0.2s; }
+        .knowledge-card:hover { transform: translateX(5px); }
+        .knowledge-card::before { content: ''; position: absolute; top: 0; left: 0; width: 4px; height: 100%; }
+        
+        .card-caution { background: linear-gradient(90deg, rgba(249, 115, 22, 0.1), transparent); border: 1px solid rgba(249, 115, 22, 0.2); } .card-caution::before { background: #f97316; }
+        .card-diff { background: linear-gradient(90deg, rgba(59, 130, 246, 0.1), transparent); border: 1px solid rgba(59, 130, 246, 0.2); } .card-diff::before { background: #3b82f6; }
+        .card-error { background: linear-gradient(90deg, rgba(234, 179, 8, 0.1), transparent); border: 1px solid rgba(234, 179, 8, 0.2); } .card-error::before { background: #eab308; }
+        .card-forbidden { background: linear-gradient(90deg, rgba(239, 68, 68, 0.1), transparent); border: 1px solid rgba(239, 68, 68, 0.2); } .card-forbidden::before { background: #ef4444; }
+        .card-advice { background: linear-gradient(90deg, rgba(16, 185, 129, 0.1), transparent); border: 1px solid rgba(16, 185, 129, 0.2); } .card-advice::before { background: #10b981; }
+    </style>
+</head>
+<body class="pb-24 bg-slate-950 selection:bg-blue-500 selection:text-white">
+
+    <header class="px-6 py-4 border-b border-slate-800 sticky top-0 z-50 bg-slate-950/90 backdrop-blur-md flex justify-between items-center shadow-lg">
+        <div class="flex items-center gap-3">
+            <div class="w-2 h-8 bg-blue-600 rounded-full"></div>
+            <div>
+                <h1 class="text-lg font-black text-white italic tracking-tighter">CNX PBB MASTER <span class="text-blue-500">v32</span></h1>
+                <p class="text-[10px] text-slate-500 font-bold tracking-widest">FINAL GEOMETRY CORRECTION</p>
+            </div>
+        </div>
+        <div class="hidden sm:flex items-center gap-2 px-3 py-1 bg-slate-900 rounded-full border border-slate-800">
+            <span class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+            <span class="text-[9px] font-bold text-slate-300 uppercase">SYSTEM ONLINE</span>
+        </div>
+    </header>
+
+    <main class="p-4 md:p-8 space-y-0 max-w-7xl mx-auto">
+        <!-- STEP 1: BAY SELECTION -->
+        <section id="step1" class="step-section active">
+            <div class="flex items-center gap-4 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white shadow-lg shadow-blue-900/40">01</div>
+                <div>
+                    <h2 class="text-xl font-bold text-white tracking-tight">เลือกหลุมจอด (Bay Selection)</h2>
+                    <p class="text-xs text-slate-500 mt-1">เลือกระบุตำแหน่งเพื่อตรวจสอบข้อมูลเชิงลึก</p>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 md:grid-cols-6 gap-3">
+                <button onclick="selectBay('3', 2)" id="bay-3" class="gate-card border border-slate-800 p-6 rounded-2xl flex flex-col items-center group">
+                    <span class="text-4xl font-black italic text-slate-500 group-hover:text-white transition-colors">03</span>
+                </button>
+                <button onclick="selectBay('4', 4)" id="bay-4" class="gate-card border border-slate-800 p-6 rounded-2xl flex flex-col items-center group">
+                    <span class="text-4xl font-black italic text-emerald-600 group-hover:text-emerald-400 transition-colors">04</span>
+                </button>
+                <button onclick="selectBay('5', 4)" id="bay-5" class="gate-card border border-slate-800 p-6 rounded-2xl flex flex-col items-center group">
+                    <span class="text-4xl font-black italic text-emerald-600 group-hover:text-emerald-400 transition-colors">05</span>
+                </button>
+                <button onclick="selectBay('6', 2)" id="bay-6" class="gate-card border border-slate-800 p-6 rounded-2xl flex flex-col items-center group">
+                    <span class="text-4xl font-black italic text-slate-500 group-hover:text-white transition-colors">06</span>
+                </button>
+                <button onclick="selectBay('7', 4)" id="bay-7" class="gate-card border border-slate-800 p-6 rounded-2xl flex flex-col items-center group">
+                    <span class="text-4xl font-black italic text-emerald-600 group-hover:text-emerald-400 transition-colors">07</span>
+                </button>
+                <button onclick="selectBay('8', 2)" id="bay-8" class="gate-card border border-slate-800 p-6 rounded-2xl flex flex-col items-center group">
+                    <span class="text-4xl font-black italic text-slate-500 group-hover:text-white transition-colors">08</span>
+                </button>
+            </div>
+        </section>
+
+        <!-- STEP 2: KNOWLEDGE & AIRCRAFT -->
+        <section id="step2" class="step-section">
+            <div class="glass-panel p-8 rounded-3xl border-l-4 border-blue-500 mb-8">
+                <!-- Part 2.1 Knowledge -->
+                <div class="flex items-center gap-4 mb-6">
+                    <div class="w-10 h-10 rounded-xl bg-blue-600 flex items-center justify-center font-black text-white shadow-lg">02</div>
+                    <div>
+                        <h2 class="text-xl font-bold text-white">ข้อมูลเชิงลึก <span id="knowledge-bay-id" class="text-blue-400 font-mono italic ml-2">BAY --</span></h2>
+                        <p class="text-xs text-slate-400">ข้อมูลบทสัมภาษณ์และข้อควรระวังสำคัญ</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8" id="knowledge-container">
+                    <!-- Injected via JS -->
+                </div>
+
+                <!-- Part 2.2 Aircraft Selection -->
+                <div class="pt-8 border-t border-slate-700/50">
+                    <h3 class="text-sm font-bold text-white uppercase tracking-widest mb-4 flex items-center gap-2">
+                        <i data-lucide="plane" class="w-4 h-4 text-emerald-500"></i> เลือกแบบเครื่องบิน (Aircraft Type)
+                    </h3>
+                    <div id="acGrid" class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
+                        <!-- Injected via JS -->
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- STEP 3: VISUALIZATION -->
+        <section id="step3" class="step-section">
+             <div class="flex items-center gap-4 mb-6">
+                <div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center font-black text-white shadow-lg shadow-emerald-900/40">03</div>
+                <div>
+                    <h2 class="text-xl font-bold text-emerald-400 italic tracking-tight">3D Technical Analysis</h2>
+                    <p class="text-xs text-slate-500 mt-1">โมเดลจำลองสมจริง (Proportional Geometry) และข้อมูลจำเพาะ</p>
+                </div>
+            </div>
+            
+            <div id="resultOutput">
+                <!-- Content injected here -->
+            </div>
+        </section>
+    </main>
+
+    <script>
+        let currentBay = null;
+        let currentAC = null;
+        let scene, camera, renderer, aircraftGroup, controls, animationId;
+
+        // --- LOCKED DATA ---
+        const BAY_DATA = {
+            '3': { caution: 'ระยะห่างระหว่างสะพานกับเครื่องใกล้มาก ต้องระวังช่วง 1–2 เมตรก่อนถึงเครื่อง / ต้องตรวจสอบ T-Mark และ VDGS อย่างแม่นยำ / ข้อจำกัดด้านความสูงของ Rotunda ทำให้ปรับระดับลงต่ำได้จำกัด', diff: 'ไม่สามารถรองรับ aircraft บางประเภท เช่น Boeing ได้ดี เนื่องจากข้อจำกัดด้านความสูง / พื้นที่จอดจำกัด / ระยะถอยสั้นกว่าหลุมอื่น', mistake: 'ระบบ canopy ค้าง / uneven canopy / hydraulic ตอบสนองไม่แม่นยำ / ระดับความสูงคลาดเคลื่อน', forbidden: 'ห้ามเข้าเทียบหาก aircraft stop ไม่ตรงตำแหน่ง / ห้ามฝืนระบบ canopy หรือระบบปรับระดับ / ห้ามถอยเกินระยะ', advice: 'ควบคุมอย่างช้า / ตรวจสอบ VDGS, T-Mark และตำแหน่ง aircraft ก่อนเข้าเทียบ / ตรวจสอบระดับพื้นให้ขนานกับ aircraft' },
+            '4': { caution: 'มี blind spot ทำให้มองเห็น aircraft ไม่ครบ / ต้องระวังมุมและ alignment / ต้องตรวจสอบ mark อย่างแม่นยำ', diff: 'Auto level มี reliability ต่ำ / control system error ได้ง่าย / เป็นระบบ manual', mistake: 'Auto level ไม่ทำงาน / control error เมื่อควบคุมเร็ว / alignment ผิด', forbidden: 'ห้ามควบคุมเร็วหรือกระชาก / ห้ามเข้าเทียบหากระบบไม่พร้อม', advice: 'ใช้ VDGS + visual inspection ควบคู่กัน / ควบคุมอย่างช้า / ตรวจสอบ alignment ซ้ำ' },
+            '5': { caution: 'พื้นผิวขรุขระ ทำให้สะพานสั่น / ต้องระวัง control stability', diff: 'เป็น Bay ที่มี vibration สูงสุด / ระบบเป็น manual', mistake: 'control instability จาก vibration', forbidden: 'ห้ามควบคุมเร็ว', advice: 'ควบคุมอย่าง smooth และช้า / ใช้ visual inspection' },
+            '6': { caution: 'มี blind spot ต้องใช้สายตามองช่วย / ต้องระวัง engine proximity โดยเฉพาะ wide-body aircraft / ต้องปรับ cab alignment ให้เหมาะสม', diff: 'เป็น Bay ที่ตอบสนองดีที่สุด / รองรับ wide-body aircraft / ใช้ touchscreen system', mistake: 'wheel control error / steering error / system reset', forbidden: 'ห้ามเข้าใกล้ aircraft โดยไม่ควบคุม alignment / ห้าม ignore system error', advice: 'ใช้ VDGS และ visual inspection / ควบคุม joystick อย่าง smooth / ตรวจสอบ alignment' },
+            '7': { caution: 'เป็น Bay ที่มี response lag สูงสุด / ต้องระวังระยะ 1–2 เมตรก่อนถึง aircraft / ไม่มี bypass safety', diff: 'ใช้ touchscreen / ไม่มี bypass system / slowest operation time', mistake: 'system error / system freeze / control overshoot', forbidden: 'ห้ามดัน joystick แรง / ห้ามเข้าใกล้ aircraft โดยไม่ slow down', advice: 'ควบคุมอย่างช้า / slow down ก่อนถึง aircraft / ใช้ visual inspection เพิ่มเติม' },
+            '8': { caution: 'ต้องตรวจสอบ bypass system / ต้องระวัง electrical system โดยเฉพาะช่วงฝน', diff: 'มี bypass system / ไม่รองรับ wide-body aircraft', mistake: 'electrical error / bypass malfunction', forbidden: 'ห้ามใช้หาก system ไม่พร้อม', advice: 'ตรวจสอบ system ก่อนใช้งาน / ใช้ SOP inspection' }
+        };
+
+        const AC_DATA = {
+            'A319': { name: 'Airbus A319', eng: 2, cat: 'Narrow', specs: { len: '33.84 m', span: '35.80 m', height: '11.76 m', base: '11.04 m', width: '3.95 m' }, 
+                geometry: { len: 34, rad: 2.0, nose: 'round', hump: false, wingSpan: 34, sweep: 0.5, eng: 2, engRad: 0.8 } },
+            'A320': { name: 'Airbus A320', eng: 2, cat: 'Narrow', specs: { len: '37.57 m', span: '35.80 m', height: '11.76 m', base: '12.64 m', width: '3.95 m' }, 
+                geometry: { len: 38, rad: 2.0, nose: 'round', hump: false, wingSpan: 34, sweep: 0.5, eng: 2, engRad: 0.8 } },
+            'A321': { name: 'Airbus A321', eng: 2, cat: 'Narrow', specs: { len: '44.51 m', span: '35.80 m', height: '11.76 m', base: '16.90 m', width: '3.95 m' }, 
+                geometry: { len: 45, rad: 2.0, nose: 'round', hump: false, wingSpan: 34, sweep: 0.5, eng: 2, engRad: 0.8 } },
+            'B737-800': { name: 'Boeing 737-800', eng: 2, cat: 'Narrow', specs: { len: '39.50 m', span: '35.79 m', height: '12.50 m', base: '15.60 m', width: '3.76 m' }, 
+                geometry: { len: 40, rad: 1.8, nose: 'sharp', hump: false, wingSpan: 36, sweep: 0.6, eng: 2, engRad: 0.7 } },
+            'B737-900': { name: 'Boeing 737-900', eng: 2, cat: 'Narrow', specs: { len: '42.11 m', span: '35.79 m', height: '12.50 m', base: '17.17 m', width: '3.76 m' }, 
+                geometry: { len: 42, rad: 1.8, nose: 'sharp', hump: false, wingSpan: 36, sweep: 0.6, eng: 2, engRad: 0.7 } },
+            'B737MAX': { name: 'Boeing 737 MAX', eng: 2, cat: 'Narrow', specs: { len: '39.52 m', span: '35.92 m', height: '12.30 m', base: '15.60 m', width: '3.76 m' }, 
+                geometry: { len: 40, rad: 1.8, nose: 'sharp', hump: false, wingSpan: 36, sweep: 0.6, eng: 2, engRad: 0.75 } },
+            'A330': { name: 'Airbus A330-300', eng: 2, cat: 'Wide', specs: { len: '63.69 m', span: '60.30 m', height: '16.83 m', base: '25.60 m', width: '5.64 m' }, 
+                geometry: { len: 64, rad: 2.8, nose: 'round', hump: false, wingSpan: 60, sweep: 0.7, eng: 2, engRad: 1.2 } },
+            'A340': { name: 'Airbus A340-300', eng: 4, cat: 'Wide', specs: { len: '63.60 m', span: '60.30 m', height: '16.91 m', base: '25.60 m', width: '5.64 m' }, 
+                geometry: { len: 64, rad: 2.8, nose: 'round', hump: false, wingSpan: 60, sweep: 0.7, eng: 4, engRad: 1.0 } },
+            'A350': { name: 'Airbus A350-900', eng: 2, cat: 'Wide', specs: { len: '66.80 m', span: '64.75 m', height: '17.05 m', base: '28.66 m', width: '5.96 m' }, 
+                geometry: { len: 67, rad: 3.0, nose: 'round', hump: false, wingSpan: 65, sweep: 0.8, eng: 2, engRad: 1.3 } },
+            'B787': { name: 'B787 Dreamliner', eng: 2, cat: 'Wide', specs: { len: '62.81 m', span: '60.12 m', height: '17.02 m', base: '25.00 m', width: '5.77 m' }, 
+                geometry: { len: 63, rad: 2.9, nose: 'round', hump: false, wingSpan: 60, sweep: 0.75, eng: 2, engRad: 1.3 } },
+            'B747': { name: 'Boeing 747-400', eng: 4, cat: 'Jumbo', specs: { len: '70.66 m', span: '64.44 m', height: '19.40 m', base: '25.60 m', width: '6.50 m' }, 
+                geometry: { len: 71, rad: 3.25, nose: 'round', hump: true, wingSpan: 64, sweep: 0.8, eng: 4, engRad: 1.2 } }
+        };
+
+        const AC_LIST = Object.keys(AC_DATA);
+
+        // --- INIT ---
+        function init() {
+            const grid = document.getElementById('acGrid');
+            grid.innerHTML = AC_LIST.map(id => {
+                const ac = AC_DATA[id];
+                const engColor = ac.cat === 'Wide' || ac.cat === 'Jumbo' ? 'bg-purple-900/50 text-purple-300 border-purple-700' : 'bg-slate-900/50 text-slate-400 border-slate-700';
+                return `
+                <button onclick="selectAC('${id}')" id="ac-${id}" data-cat="${ac.cat}" class="ac-btn glass-panel p-4 rounded-xl flex flex-col items-start gap-1 text-left group">
+                    <div class="flex justify-between w-full mb-1">
+                        <span class="text-[9px] font-bold uppercase tracking-widest px-2 py-0.5 rounded border ${engColor}">${ac.eng} ENG</span>
+                        <span class="text-[9px] text-slate-500">${ac.cat}</span>
+                    </div>
+                    <span class="text-sm font-bold text-white group-hover:text-blue-400 transition-colors">${ac.name}</span>
+                </button>
+            `}).join('');
+            lucide.createIcons();
+        }
+
+        function selectBay(id, maxEngines) {
+            currentBay = id;
+            document.querySelectorAll('.gate-card').forEach(el => el.classList.remove('active'));
+            document.getElementById(`bay-${id}`).classList.add('active');
+            
+            document.querySelectorAll('.ac-btn').forEach(btn => {
+                const cat = btn.getAttribute('data-cat');
+                if (id === '8' && (cat === 'Wide' || cat === 'Jumbo')) btn.classList.add('ac-disabled');
+                else btn.classList.remove('ac-disabled');
+                btn.classList.remove('active');
+            });
+
+            const k = BAY_DATA[id];
+            document.getElementById('knowledge-bay-id').innerText = `BAY 0${id}`;
+            const kContainer = document.getElementById('knowledge-container');
+            
+            kContainer.innerHTML = `
+                <div class="knowledge-card card-caution"><h4 class="text-xs font-black text-orange-500 mb-2 flex items-center gap-2"><i data-lucide="alert-triangle" class="w-4 h-4"></i> จุดที่ต้องระวังมากที่สุด</h4><p class="text-sm text-slate-300 leading-relaxed">${k.caution}</p></div>
+                <div class="knowledge-card card-diff"><h4 class="text-xs font-black text-blue-400 mb-2 flex items-center gap-2"><i data-lucide="git-compare" class="w-4 h-4"></i> ความแตกต่างจากหลุมอื่น</h4><p class="text-sm text-slate-300 leading-relaxed">${k.diff}</p></div>
+                <div class="knowledge-card card-error"><h4 class="text-xs font-black text-yellow-500 mb-2 flex items-center gap-2"><i data-lucide="alert-circle" class="w-4 h-4"></i> ข้อผิดพลาดที่พบบ่อย</h4><p class="text-sm text-slate-300 leading-relaxed">${k.mistake}</p></div>
+                <div class="knowledge-card card-forbidden"><h4 class="text-xs font-black text-red-500 mb-2 flex items-center gap-2"><i data-lucide="ban" class="w-4 h-4"></i> สิ่งที่ไม่ควรทำเด็ดขาด</h4><p class="text-sm text-slate-300 leading-relaxed">${k.forbidden}</p></div>
+                <div class="knowledge-card card-advice lg:col-span-2"><h4 class="text-xs font-black text-emerald-500 mb-2 flex items-center gap-2"><i data-lucide="graduation-cap" class="w-4 h-4"></i> คำแนะนำสำหรับพนักงานใหม่</h4><p class="text-base text-white italic leading-relaxed">"${k.advice}"</p></div>
+            `;
+            lucide.createIcons();
+
+            const step2 = document.getElementById('step2');
+            step2.classList.add('active');
+            document.getElementById('step3').classList.remove('active');
+            setTimeout(() => step2.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+        }
+
+        function selectAC(id) {
+            currentAC = id;
+            document.querySelectorAll('.ac-btn').forEach(el => el.classList.remove('active'));
+            document.getElementById(`ac-${id}`).classList.add('active');
+            updateStep3(id);
+            const step3 = document.getElementById('step3');
+            step3.classList.add('active');
+            setTimeout(() => {
+                step3.scrollIntoView({ behavior: 'smooth' });
+                setTimeout(() => initThreeJS(id), 200);
+            }, 200);
+        }
+
+        function updateStep3(id) {
+            const data = AC_DATA[id];
+            const output = document.getElementById('resultOutput');
+            output.innerHTML = `
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+                    <div class="lg:col-span-2">
+                        <div id="three-container">
+                            <div class="absolute top-4 left-4 pointer-events-none z-10"><div class="bg-black/50 backdrop-blur-md border border-blue-500/30 p-2 rounded text-[10px] text-blue-400 font-mono">MODEL: ${data.name}<br>TYPE: ${data.cat.toUpperCase()}<br>MODE: FINAL GEOMETRY</div></div>
+                            <div class="absolute bottom-4 right-4 pointer-events-none z-10"><span class="text-[9px] text-slate-500 font-bold uppercase flex items-center gap-2"><i data-lucide="move" class="w-3 h-3"></i> Drag to Rotate</span></div>
+                        </div>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="glass-panel p-6 rounded-2xl border-l-4 border-emerald-500"><span class="text-[10px] text-slate-500 font-bold uppercase tracking-widest">Selected Model</span><h3 class="text-2xl font-black text-white mt-1 leading-tight italic">${data.name}</h3></div>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div class="spec-item"><p class="spec-label text-blue-400">Length</p><p class="text-lg font-bold text-white mono">${data.specs.len}</p></div>
+                            <div class="spec-item"><p class="spec-label text-blue-400">Span</p><p class="text-lg font-bold text-white mono">${data.specs.span}</p></div>
+                            <div class="spec-item"><p class="spec-label text-slate-400">Height</p><p class="text-lg font-bold text-white mono">${data.specs.height}</p></div>
+                            <div class="spec-item"><p class="spec-label text-slate-400">Wheelbase</p><p class="text-lg font-bold text-white mono">${data.specs.base}</p></div>
+                            <div class="spec-item col-span-2"><p class="spec-label text-slate-500">Fuselage Width</p><p class="text-lg font-bold text-white mono">${data.specs.width}</p></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        // --- 3D ENGINE ---
+        function initThreeJS(acId) {
+            const container = document.getElementById('three-container');
+            if(!container) return;
+            if(renderer) { container.innerHTML = ''; renderer.dispose(); }
+
+            const w = container.clientWidth; const h = container.clientHeight;
+            scene = new THREE.Scene(); scene.background = new THREE.Color(0x050505); scene.fog = new THREE.Fog(0x050505, 10, 150);
+            
+            const geoConfig = AC_DATA[acId].geometry;
+            const camDist = geoConfig.len * 0.8 + 25; 
+            camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 500);
+            camera.position.set(camDist*0.5, camDist*0.4, camDist*0.5); camera.lookAt(0,0,0);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(w, h); renderer.setPixelRatio(window.devicePixelRatio);
+            container.appendChild(renderer.domElement);
+
+            if(typeof THREE.OrbitControls !== 'undefined') {
+                controls = new THREE.OrbitControls(camera, renderer.domElement);
+                controls.autoRotate = true; controls.autoRotateSpeed = 0.5;
+                controls.enableDamping = true; controls.dampingFactor = 0.05;
+            }
+
+            aircraftGroup = new THREE.Group(); scene.add(aircraftGroup);
+            const wireMat = new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.6 });
+            const solidMat = new THREE.MeshBasicMaterial({ color: 0x020202 });
+
+            // 1. FUSELAGE (REBUILT LOGIC)
+            const fusePoints = [];
+            const length = geoConfig.len;
+            const radius = geoConfig.rad;
+            // Define strict sections
+            const tailLength = length * 0.15;
+            const noseLength = length * 0.12;
+            const bodyLength = length - tailLength - noseLength;
+            const segments = 40;
+
+            for (let i = 0; i <= segments; i++) {
+                const t = i / segments;
+                let x, r;
+
+                if (t < tailLength / length) {
+                    // Tail Cone: Linear taper to 0
+                    const localT = t / (tailLength / length);
+                    r = radius * localT;
+                    x = -length/2 + tailLength * localT;
+                }
+                else if (t > (tailLength + bodyLength) / length) {
+                    // Nose Cone: Ellipsoid formula
+                    const localT = (t - (tailLength + bodyLength) / length) / (noseLength / length);
+                    // Ellipsoid Equation: r = b * sqrt(1 - x^2)
+                    // Clamp to prevent NaN
+                    const normalized = Math.min(1, Math.max(0, localT));
+                    r = radius * Math.sqrt(1 - Math.pow(normalized, 2));
+                    
+                    if (geoConfig.nose === 'sharp') r *= (1 - normalized * 0.4); // Sharper nose for Boeing
+                    x = length/2 - noseLength + noseLength * localT;
+                }
+                else {
+                    // Main Body: Straight Cylinder
+                    r = radius;
+                    // B747 Hump Logic
+                    if (geoConfig.hump) {
+                        const bodyT = (t * length - tailLength) / bodyLength;
+                        // Hump starts at ~55% and ends at ~85% of body
+                        const humpStart = 0.55;
+                        const humpEnd = 0.85;
+                        if (bodyT > humpStart && bodyT < humpEnd) {
+                            const humpT = (bodyT - humpStart)/(humpEnd - humpStart); // 0 to 1
+                            r *= 1 + 0.35 * Math.sin(humpT * Math.PI); // Smooth sine bulge
+                        }
+                    }
+                    x = -length/2 + tailLength + bodyLength * ((t - tailLength/length)/(bodyLength/length));
+                }
+                
+                fusePoints.push(new THREE.Vector2(r, x));
+            }
+
+            const fuseGeom = new THREE.LatheGeometry(fusePoints, 32);
+            // Point +X
+            fuseGeom.rotateZ(-Math.PI/2);
+
+            const fuseMesh = new THREE.Mesh(fuseGeom, solidMat);
+            const fuseWire = new THREE.LineSegments(new THREE.WireframeGeometry(fuseGeom), wireMat);
+            aircraftGroup.add(fuseMesh); aircraftGroup.add(fuseWire);
+
+            // 2. WINGS (Correct Position & Sweep)
+            const wSpan = geoConfig.wingSpan / 2;
+            const wSweep = geoConfig.sweep;
+            const wingShape = new THREE.Shape();
+            wingShape.moveTo(2, 0); 
+            wingShape.lineTo(-3, 0);
+            wingShape.lineTo(-3 - (wSpan*wSweep), -wSpan); 
+            wingShape.lineTo(-1 - (wSpan*wSweep), -wSpan); 
+            wingShape.lineTo(2, 0);
+            
+            const wingGeom = new THREE.ExtrudeGeometry(wingShape, { depth: 0.3, bevelEnabled: false });
+            const lWing = new THREE.LineSegments(new THREE.WireframeGeometry(wingGeom), wireMat);
+            
+            // Wing Position Calculation (Correct CG approx)
+            const wingX = length * 0.12; // Slightly forward of center
+            
+            lWing.rotation.x = Math.PI/2; 
+            lWing.position.set(wingX, -radius*0.2, 0); 
+            aircraftGroup.add(lWing);
+            const rWing = lWing.clone(); rWing.scale.y = -1; aircraftGroup.add(rWing);
+
+            // 3. TAIL
+            const vShape = new THREE.Shape();
+            vShape.moveTo(0,0); vShape.lineTo(-4,0); vShape.lineTo(-6, 5.5); vShape.lineTo(-3, 5.5); vShape.lineTo(0,0);
+            const vGeom = new THREE.ExtrudeGeometry(vShape, {depth: 0.2, bevelEnabled: false});
+            const vTail = new THREE.LineSegments(new THREE.WireframeGeometry(vGeom), wireMat);
+            vTail.position.set(-length/2 + tailLength + 2, 1.0, 0); aircraftGroup.add(vTail);
+
+            const hShape = new THREE.Shape();
+            hShape.moveTo(0,0); hShape.lineTo(-2.5,0); hShape.lineTo(-4, -4); hShape.lineTo(-2, -4); hShape.lineTo(0,0);
+            const hGeom = new THREE.ExtrudeGeometry(hShape, {depth: 0.1, bevelEnabled: false});
+            const hTailL = new THREE.LineSegments(new THREE.WireframeGeometry(hGeom), wireMat);
+            hTailL.rotation.x = Math.PI/2; hTailL.position.set(-length/2 + tailLength + 1, 0.5, 0); aircraftGroup.add(hTailL);
+            const hTailR = hTailL.clone(); hTailR.scale.y = -1; aircraftGroup.add(hTailR);
+
+            // 4. ENGINES (Fixed Attachment)
+            const engGeom = new THREE.CylinderGeometry(geoConfig.engRad, geoConfig.engRad*0.9, 3, 16, 1, true);
+            const pylonGeom = new THREE.BoxGeometry(0.5, 1.0, 2.0); // Connector
+            
+            const engWire = new THREE.LineSegments(new THREE.WireframeGeometry(engGeom), wireMat);
+            const pylonWire = new THREE.LineSegments(new THREE.WireframeGeometry(pylonGeom), wireMat);
+            engWire.rotation.z = Math.PI/2;
+
+            const addEng = (zOffset) => { 
+                // Engine X Position based on Wing X + Sweep
+                // Wing Leading Edge at Z is approx: wingX - (abs(z) * sweep)
+                const engineX = wingX - (Math.abs(zOffset) * 0.5) + 1.5; 
+                const grp = new THREE.Group();
+                const e = engWire.clone(); 
+                e.position.y = -radius*0.8; // Hang below wing
+                
+                const p = pylonWire.clone();
+                p.position.set(0.5, -radius*0.4, 0); // Bridge gap
+                
+                grp.add(e); grp.add(p);
+                grp.position.set(engineX, 0, zOffset);
+                aircraftGroup.add(grp);
+            };
+
+            // Engine Z Positions based on Wingspan
+            const engineZ = geoConfig.wingSpan * 0.25;
+
+            if(geoConfig.eng === 2) { 
+                addEng(engineZ); addEng(-engineZ); 
+            } else { 
+                addEng(engineZ * 0.6); addEng(-engineZ * 0.6); 
+                addEng(engineZ * 1.4); addEng(-engineZ * 1.4); 
+            }
+
+            const grid = new THREE.GridHelper(100, 50, 0x222222, 0x111111);
+            grid.position.y = -4; scene.add(grid);
+
+            if(animationId) cancelAnimationFrame(animationId);
+            function animate() {
+                animationId = requestAnimationFrame(animate);
+                if(controls) controls.update();
+                renderer.render(scene, camera);
+            }
+            animate();
+            window.addEventListener('resize', () => {
+                camera.aspect = container.clientWidth / container.clientHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(container.clientWidth, container.clientHeight);
+            });
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
